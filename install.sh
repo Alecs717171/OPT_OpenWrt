@@ -39,7 +39,7 @@ apk add wget tar iptables
 # 5. Скачивание и установка AdGuard Home
 echo "🛡️ Установка AdGuard Home..."
 cd /tmp
-wget https://github.com/AdguardTeam/AdGuardHome/releases/download/v0.107.65/AdGuardHome_linux_amd64.tar.gz -O AdGuardHome.tar.gz
+wget https://github.com/AdguardTeam/AdGuardHome/releases/download/v0.107.65/AdGuardHome_linux_arm64.tar.gz -O AdGuardHome.tar.gz
 tar -xvf AdGuardHome.tar.gz
 mkdir -p /usr/bin/AdGuardHome
 mv AdGuardHome/* /usr/bin/AdGuardHome/
@@ -86,8 +86,28 @@ else
     echo "⏩ Пропускаем бэкап."
 fi
 
+# ===== НОВЫЙ БЛОК: Автозапуск Zapret =====
+echo "🚀 Запускаю Zapret..."
+if [ -f /opt/zapret/zapret.sh ]; then
+    /opt/zapret/zapret.sh start
+    /opt/zapret/zapret.sh enable
+    echo "✅ Zapret запущен и добавлен в автозагрузку."
+elif [ -f /etc/init.d/zapret ]; then
+    /etc/init.d/zapret start
+    /etc/init.d/zapret enable
+    echo "✅ Zapret (init) запущен и добавлен в автозагрузку."
+else
+    echo "⚠️ Zapret не найден. Возможно, он установится позже или требует перезагрузки."
+fi
+
+# Проверка статуса
+echo "📋 Статус Zapret:"
+ps | grep -E "zapret|nfqws" | grep -v grep || echo "❌ Zapret не запущен"
+
+# ============================================
+
 echo "=================================="
 echo "🌐 AdGuard: http://192.168.1.1:3000"
 echo "📋 Русский язык включён"
-echo "🛡️ Zapret установлен"
+echo "🛡️ Zapret установлен и запущен"
 echo "=================================="

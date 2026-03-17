@@ -9,19 +9,34 @@ echo "=================================="
 echo "🚀 Начинаю установку..."
 echo "=================================="
 
-# 1. Обновление пакетов
-echo "📦 Обновление пакетов..."
-opkg update
+# 1. Предложение сделать бэкап перед началом
+echo "⚠️  Рекомендуется сделать бэкап текущей конфигурации."
+read -p "   Сделать бэкап сейчас? (y/n): " choice
+if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+    BACKUP_FILE="/root/backup-$(date +%Y%m%d-%H%M%S).tar.gz"
+    echo "📦 Создаю бэкап в $BACKUP_FILE ..."
+    sysupgrade -b "$BACKUP_FILE"
+    echo "✅ Бэкап создан."
+else
+    echo "⏩ Пропускаем бэкап."
+fi
 
-# 2. Установка русского языка
+# 2. Обновление пакетов
+echo "📦 Обновление списка пакетов..."
+apk update
+
+# 3. Установка русского языка
 echo "🇷🇺 Установка русского языка..."
-opkg install luci-i18n-base-ru luci-i18n-firewall-ru luci-i18n-attendedsysupgrade-ru luci-i18n-adguardhome-ru
+apk add luci-i18n-attendedsysupgrade-ru \
+        luci-i18n-firewall-ru \
+        luci-i18n-package-manager-ru \
+        luci-i18n-base-ru
 
-# 3. Установка зависимостей
+# 4. Установка зависимостей
 echo "📦 Установка зависимостей..."
-opkg install wget tar iptables
+apk add wget tar iptables
 
-# 4. Скачивание и установка AdGuard Home
+# 5. Скачивание и установка AdGuard Home
 echo "🛡️ Установка AdGuard Home..."
 cd /tmp
 wget https://github.com/AdguardTeam/AdGuardHome/releases/download/v0.107.65/AdGuardHome_linux_amd64.tar.gz -O AdGuardHome.tar.gz
@@ -29,7 +44,7 @@ tar -xvf AdGuardHome.tar.gz
 mkdir -p /usr/bin/AdGuardHome
 mv AdGuardHome/* /usr/bin/AdGuardHome/
 
-# 5. Настройка AdGuard Home на 127.0.0.10:53
+# 6. Настройка AdGuard Home на 127.0.0.10:53
 ip addr add 127.0.0.10/32 dev lo 2>/dev/null
 
 cat > /usr/bin/AdGuardHome/AdGuardHome.yaml <<EOF
@@ -42,24 +57,36 @@ dns:
 users: []
 EOF
 
-# 6. Установка сервиса AdGuard
+# 7. Установка сервиса AdGuard
 cd /usr/bin/AdGuardHome
 ./AdGuardHome -s install
 service AdGuardHome start
 
-# 7. Настройка dnsmasq на форвардинг в AdGuard
+# 8. Настройка dnsmasq на форвардинг в AdGuard
 uci set dhcp.@dnsmasq[0].port='53'
 uci add_list dhcp.@dnsmasq[0].server='127.0.0.10#53'
 uci commit dhcp
 /etc/init.d/dnsmasq restart
 
-# 8. Установка Zapret Manager
+# 9. Установка Zapret Manager
 echo "🔧 Установка Zapret Manager..."
 sh <(wget -O - https://raw.githubusercontent.com/StressOzz/Zapret-Manager/main/Zapret-Manager.sh)
 
-# 9. Проверка
+# 10. Предложение сделать бэкап после установки
 echo "=================================="
-echo "✅ Готово!"
+echo "✅ Установка завершена!"
+echo "=================================="
+read -p "   Сделать бэкап всей системы? (y/n): " choice2
+if [ "$choice2" = "y" ] || [ "$choice2" = "Y" ]; then
+    BACKUP2_FILE="/root/fullbackup-$(date +%Y%m%d-%H%M%S).tar.gz"
+    echo "📦 Создаю полный бэкап в $BACKUP2_FILE ..."
+    sysupgrade -b "$BACKUP2_FILE"
+    echo "✅ Бэкап создан."
+else
+    echo "⏩ Пропускаем бэкап."
+fi
+
+echo "=================================="
 echo "🌐 AdGuard: http://192.168.1.1:3000"
 echo "📋 Русский язык включён"
 echo "🛡️ Zapret установлен"
